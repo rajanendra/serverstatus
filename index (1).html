@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Server Status</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN -->
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #121212;
+        color: #ddd;
+        font-family: "Poppins", sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        height: 100vh;
+        margin: 0;
+        transition: background-color 0.3s, color 0.3s;
+        padding: 20px;
+        overflow-x: hidden;
+      }
+
+      .status-card {
+        background: #1e1e1e;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        max-width: 400px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+
+      .status-card:hover {
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        transform: translateY(-5px);
+      }
+
+      .status-card h1 {
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 15px;
+        word-wrap: break-word;
+      }
+
+      .status-text {
+        font-size: 1rem;
+        color: #ccc;
+        margin-bottom: 20px;
+        animation: blinking 1.5s infinite;
+      }
+
+      .status {
+        font-size: 1.5rem;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 50px;
+        display: inline-block;
+        margin-top: 10px;
+        transition: background-color 0.3s ease;
+      }
+
+      .status-up {
+        background-color: #27ae60;
+      }
+
+      .status-down {
+        background-color: #e74c3c;
+      }
+
+      .status-up:hover {
+        background-color: #2ecc71;
+      }
+
+      .status-down:hover {
+        background-color: #c0392b;
+      }
+
+      .reload-btn {
+        background-color: #3498db;
+        color: white;
+        padding: 12px 25px;
+        font-size: 1rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
+      }
+
+      .reload-btn:hover {
+        background-color: #2980b9;
+      }
+
+      .spinner {
+        display: none;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin-top: 20px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes blinking {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      /* Dark Mode toggle button */
+      .darkmode-btn {
+        background-color: #333;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        cursor: pointer;
+      }
+
+      .darkmode-btn:hover {
+        background-color: #555;
+      }
+
+      /* Light mode adjustments */
+      .light-mode {
+        background-color: #f5f6f7;
+        color: #333;
+      }
+
+      .light-mode .status-card {
+        background: #ffffff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .light-mode .status-card h1 {
+        color: #333;
+      }
+
+      .light-mode .status-text {
+        color: #555;
+      }
+
+      .light-mode .status-up {
+        background-color: #27ae60;
+      }
+
+      .light-mode .status-down {
+        background-color: #e74c3c;
+      }
+
+      .light-mode .reload-btn {
+        background-color: #3498db;
+        color: white;
+      }
+
+      .light-mode .darkmode-btn {
+        background-color: #fff;
+        color: #333;
+      }
+
+      .light-mode .darkmode-btn:hover {
+        background-color: #ddd;
+      }
+
+      /* Responsiveness for small screens */
+      @media (max-width: 768px) {
+        .status-card {
+          padding: 15px;
+        }
+
+        .status-card h1 {
+          font-size: 1.4rem;
+        }
+
+        .status-text {
+          font-size: 0.9rem;
+        }
+
+        .status {
+          font-size: 1.3rem;
+        }
+
+        .reload-btn {
+          width: 100%;
+          font-size: 0.9rem;
+        }
+
+        #pingChart {
+          width: 100%;
+          max-width: 400px;
+          height: 250px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 10px;
+        }
+
+        .status-card {
+          padding: 15px;
+          width: 100%;
+        }
+
+        .status-card h1 {
+          font-size: 1.2rem;
+        }
+
+        .status-text {
+          font-size: 0.8rem;
+        }
+
+        .status {
+          font-size: 1.2rem;
+          padding: 10px 20px;
+        }
+
+        .reload-btn {
+          font-size: 0.8rem;
+          padding: 10px;
+        }
+
+        #pingChart {
+          width: 100%;
+          height: 200px;
+        }
+      }
+
+      /* For very small screens */
+      @media (max-width: 360px) {
+        .status-card {
+          padding: 10px;
+        }
+
+        .status-card h1 {
+          font-size: 1.1rem;
+        }
+
+        .status-text {
+          font-size: 0.7rem;
+        }
+
+        .status {
+          font-size: 1.1rem;
+          padding: 8px 15px;
+        }
+
+        .reload-btn {
+          font-size: 0.7rem;
+          padding: 8px;
+        }
+
+        #pingChart {
+          width: 100%;
+          height: 180px;
+        }
+      }
+
+      /* Chart container */
+      #pingChart {
+        width: 100%;
+        max-width: 600px;
+        margin: 20px auto;
+      }
+
+      /* IP Address Container */
+      .ip-container {
+        margin-top: 20px;
+        font-size: 1rem;
+        color: #fff;
+      }
+    </style>
+  </head>
+
+  <body>
+    <button class="darkmode-btn" onclick="toggleDarkMode()">
+      🌙 Switch to Light Mode
+    </button>
+
+    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; max-width: 500px;">
+      <!-- Server 1 Card -->
+      <div class="status-card" id="server1Card">
+        <h1>Server 1: rajanendra.cloud</h1>
+        <div class="status-text" id="statusText1" aria-live="polite">Checking...</div>
+        <div id="serverStatus1" class="status-up" aria-live="polite">Loading...</div>
+      </div>
+
+      <!-- Server 2 Card -->
+      <div class="status-card" id="server2Card">
+        <h1>Server 2: srv.rajanendra.cloud</h1>
+        <div class="status-text" id="statusText2" aria-live="polite">Checking...</div>
+        <div id="serverStatus2" class="status-up" aria-live="polite">Loading...</div>
+      </div>
+
+      <!-- Ping Graph -->
+      <div id="pingChart" style="flex: 1; min-width: 300px;">
+        <canvas id="pingChartCanvas"></canvas>
+      </div>
+
+      <button class="reload-btn" onclick="checkServerStatus()">Check All Status</button>
+      <div id="spinner" class="spinner"></div>
+      
+      <!-- Display IP Address -->
+      <div class="ip-container" id="userIp">Fetching your IP...</div>
+    </div>
+
+    <script>
+      let isDarkMode = true;
+
+      const pingData = {
+        labels: [], // Timestamps
+        datasets: [
+          {
+            label: 'Average Ping (ms)',
+            data: [], // Ping values
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.2)',
+            fill: true,
+            tension: 0.4,
+          },
+        ],
+      };
+
+      const pingConfig = {
+        type: 'line',
+        data: pingData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom',
+              ticks: {
+                maxTicksLimit: 6,
+              },
+            },
+            y: {
+              min: 0,
+              ticks: {
+                stepSize: 50,
+              },
+            },
+          },
+        },
+      };
+
+      const pingChart = new Chart(document.getElementById('pingChartCanvas'), pingConfig);
+
+      function updatePingGraph() {
+        if (pingData.labels.length > 10) {
+          pingData.labels.shift();
+          pingData.datasets[0].data.shift();
+        }
+
+        const currentTime = Date.now();
+        const randomPing = Math.floor(Math.random() * 100) + 50; // Simulate ping between 50ms to 150ms
+
+        pingData.labels.push(currentTime);
+        pingData.datasets[0].data.push(randomPing);
+
+        pingChart.update();
+      }
+
+      setInterval(updatePingGraph, 3000); // Update every 3 seconds
+
+      function checkServerStatus() {
+        document.getElementById("spinner").style.display = "block";
+        document.getElementById("serverStatus1").textContent = "Checking...";
+        document.getElementById("serverStatus2").textContent = "Checking...";
+        document
+          .getElementById("serverStatus1")
+          .classList.remove("status-up", "status-down");
+        document
+          .getElementById("serverStatus2")
+          .classList.remove("status-up", "status-down");
+        document.getElementById("serverStatus1").classList.add("status-up");
+        document.getElementById("serverStatus2").classList.add("status-up");
+
+        // Server 1
+        fetch("check_status.php?server=rajanendra.cloud")
+          .then((response) => response.text())
+          .then((data) => {
+            if (data.trim() === "up") {
+              document.getElementById("serverStatus1").textContent =
+                "Server 1 is UP";
+              document
+                .getElementById("serverStatus1")
+                .classList.add("status-up");
+              document
+                .getElementById("serverStatus1")
+                .classList.remove("status-down");
+            } else {
+              document.getElementById("serverStatus1").textContent =
+                "Server 1 is DOWN";
+              document
+                .getElementById("serverStatus1")
+                .classList.add("status-down");
+              document
+                .getElementById("serverStatus1")
+                .classList.remove("status-up");
+            }
+          })
+          .catch((error) => {
+            console.error('Error fetching Server 1 status:', error);
+            document.getElementById("serverStatus1").textContent =
+              "Error fetching status";
+            document.getElementById("serverStatus1").classList.add("status-down");
+            document.getElementById("serverStatus1").classList.remove("status-up");
+          });
+
+        // Server 2
+        fetch("check_status.php?server=srv.rajanendra.cloud")
+          .then((response) => response.text())
+          .then((data) => {
+            if (data.trim() === "up") {
+              document.getElementById("serverStatus2").textContent =
+                "Server 2 is UP";
+              document
+                .getElementById("serverStatus2")
+                .classList.add("status-up");
+              document
+                .getElementById("serverStatus2")
+                .classList.remove("status-down");
+            } else {
+              document.getElementById("serverStatus2").textContent =
+                "Server 2 is DOWN";
+              document
+                .getElementById("serverStatus2")
+                .classList.add("status-down");
+              document
+                .getElementById("serverStatus2")
+                .classList.remove("status-up");
+            }
+          })
+          .catch((error) => {
+            console.error('Error fetching Server 2 status:', error);
+            document.getElementById("serverStatus2").textContent =
+              "Error fetching status";
+            document.getElementById("serverStatus2").classList.add("status-down");
+            document.getElementById("serverStatus2").classList.remove("status-up");
+          });
+
+        document.getElementById("spinner").style.display = "none";
+      }
+
+      // Initial status check on page load
+      checkServerStatus();
+
+      // Function to get user's IP address
+      function fetchUserIp() {
+        fetch("https://api.ipify.org?format=json")
+          .then(response => response.json())
+          .then(data => {
+            document.getElementById("userIp").textContent = `Your IP: ${data.ip}`;
+          })
+          .catch(error => {
+            console.error('Error fetching user IP:', error);
+            document.getElementById("userIp").textContent = 'Unable to fetch IP';
+          });
+      }
+
+      // Call function to fetch user's IP
+      fetchUserIp();
+
+      // Dark Mode Toggle Function
+      function toggleDarkMode() {
+        const body = document.querySelector('body');
+        body.classList.toggle('light-mode');
+        isDarkMode = !isDarkMode;
+
+        const button = document.querySelector('.darkmode-btn');
+        if (isDarkMode) {
+          button.textContent = '🌙 Switch to Dark Mode';
+        } else {
+          button.textContent = '🌞 Switch to Light Mode';
+        }
+      }
+    </script>
+  </body>
+</html>
